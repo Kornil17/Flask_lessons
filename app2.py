@@ -1,18 +1,19 @@
+import datetime
 import sqlite3
 import os
-from flask import Flask, render_template, request, g, flash, abort
+from flask import Flask, render_template, request, g, flash, abort, make_response, session
 from FDataBase import FDataBase
 
 # config
 DATABASE = '/tmp/flsite.db'
 DEBUG = True
-SECRET_KEY = "fddgkljklj123"
+SECRET_KEY = "fddb73b6a9a16cad6ab975862ec77ee2b40a070d"
 
 site = Flask(__name__)
 site.config.from_object(__name__)
 
 site.config.update(dict(DATABASE=os.path.join(site.root_path, 'flsite.db')))
-
+# session.permanent_session_lifetime = datetime.timedelta(seconds=10)
 
 def connect_db():
     conn = sqlite3.connect(site.config['DATABASE'])
@@ -61,8 +62,30 @@ def showPost(alias):
         abort(404)
     return render_template('post.html', examples=dbase.getMenu(), title=title, post=post)
 
+@site.route("/login")
+def login():
+    log = ''
+    if request.cookies.get('logged'):
+        log = request.cookies.get('logged')
+    res = make_response(f"<h1>Форма авторизации</h1><p>logged: {log}")
+    res.set_cookie("logged", "yes", 30*24*3600)
+    return res
+@site.route("/logout")
+def logout():
+    res = make_response("<p>Вы больше не авторизованы</p>")
+    res.set_cookie("logged", "", 0)
+    return res
 
-
+@site.route("/sessions")
+def sessions():
+    print(session)
+    session.permanent = True
+    if 'visits' in session:
+        session['visits'] = session.get('visits') + 1
+    else:
+        session['visits'] = 1
+    session.modified = True
+    return f"<h1>Session Page</h1><p>Число посещений: {session['visits']}"
 @site.teardown_appcontext
 def close_db(error):
     if hasattr(g, "link_db"):
