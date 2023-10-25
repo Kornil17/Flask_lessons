@@ -1,4 +1,4 @@
-from flask import Flask, render_template, url_for, request, flash, session, redirect, abort
+from flask import Flask, render_template, url_for, request, flash, session, redirect, abort, make_response
 
 site = Flask(__name__)
 
@@ -50,6 +50,19 @@ def login():
         session['userLogged'] = request.form['username']
         return redirect(url_for('profile', username=session['userLogged']))
     return render_template('login.html', title="Авторизация", examples=examples)
+
+@site.route("/test")
+def testType():
+    return "<h1>Main Page</h1>", 200, {"Content-Type":"text/plain"}
+    # content = render_template("index.html", title="Test", examples=examples)
+    # res = make_response(content)
+    # res.headers['Content-Type'] = "text/plain"
+    # res.headers["Server"] = "flasksite"
+    # return res
+
+@site.route("/transfer")
+def transfer():
+    return redirect(url_for('main'), 301)
 
 
 if __name__ == "__main__":
