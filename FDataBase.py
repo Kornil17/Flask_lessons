@@ -2,7 +2,6 @@ import math
 import sqlite3
 import time
 
-
 class FDataBase:
     def __init__(self, db):
         self.__db = db
@@ -12,7 +11,8 @@ class FDataBase:
         try:
             self.__cur.execute(sql)
             res = self.__cur.fetchall()
-            if res: return res
+            if res:
+                return res
         except:
             print("Ошибка чтения БД")
         return []

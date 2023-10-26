@@ -3,6 +3,7 @@ import sqlite3
 import os
 from flask import Flask, render_template, request, g, flash, abort, make_response, session
 from FDataBase import FDataBase
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # config
 DATABASE = '/tmp/flsite.db'
@@ -14,6 +15,13 @@ site.config.from_object(__name__)
 
 site.config.update(dict(DATABASE=os.path.join(site.root_path, 'flsite.db')))
 # session.permanent_session_lifetime = datetime.timedelta(seconds=10)
+dbase = None
+
+@site.before_request
+def before_request():
+    global dbase
+    db = get_db()
+    dbase = FDataBase(db)
 
 def connect_db():
     conn = sqlite3.connect(site.config['DATABASE'])
@@ -33,15 +41,12 @@ def get_db():
 
 @site.route("/")
 def index():
-    db = get_db()
-    dbase = FDataBase(db)
+    for i in dbase.getMenu():
+        print(i)
     return render_template('index2.html', examples=dbase.getMenu(), posts=dbase.getPostAnonce())
 
 @site.route("/add_post", methods=["POST", "GET"])
 def addPost():
-    db = get_db()
-    dbase = FDataBase(db)
-
     if request.method == "POST":
         if len(request.form['name']) > 4 and len(request.form['post']) > 10:
             res = dbase.addPost(request.form['name'], request.form['post'], request.form['url'])
@@ -53,17 +58,16 @@ def addPost():
             flash("Ошибка добавления статьи", category="error")
     return  render_template('add_post.html', examples=dbase.getMenu(), title="Добавление статьи")
 
-@site.route("/posts/<alias>")
-def showPost(alias):
-    db = get_db()
-    dbase = FDataBase(db)
-    title, post = dbase.getPost(alias)
+@site.route("/posts/<int:id>")
+def showPost(id):
+    title, post = dbase.getPost(id)
+    print(dbase.getPost(id))
     if not title:
         abort(404)
     return render_template('post.html', examples=dbase.getMenu(), title=title, post=post)
 
-@site.route("/login")
-def login():
+@site.route("/cookies")   # cookies
+def cookies():
     log = ''
     if request.cookies.get('logged'):
         log = request.cookies.get('logged')
@@ -71,12 +75,22 @@ def login():
     res.set_cookie("logged", "yes", 30*24*3600)
     return res
 @site.route("/logout")
-def logout():
+def logout_cookies():
     res = make_response("<p>Вы больше не авторизованы</p>")
     res.set_cookie("logged", "", 0)
     return res
 
-@site.route("/sessions")
+@site.route("/login")
+def login():
+    return render_template('login2.html', examples=dbase.getMenu(), title='Login')
+@site.route('/register', methods=["POST", "GET"])
+def register():
+    if request.method == "POST":
+        if len(request.form['name']) > 4 and len(request.form['email']) > 4 and len(request.form['psw']) > 4 and request.form['psw'] == request.form['psw2']:
+            hash = generate_password_hash()
+    return render_template('register.html', examples=dbase.getMenu(), title='Register')
+
+@site.route("/sessions") # sessions
 def sessions():
     print(session)
     session.permanent = True
