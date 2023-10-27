@@ -1,17 +1,19 @@
 import datetime
 import sqlite3
 import os
-from flask import Flask, render_template, request, g, flash, abort, make_response, session
+from flask import Flask, render_template, request, g, flash, abort, make_response, session, redirect, url_for
 from FDataBase import FDataBase
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import LoginManager, login_user, login_required
+from UserLogin import UserLogin
 
 # config
 DATABASE = '/tmp/flsite.db'
 DEBUG = True
 SECRET_KEY = "fddb73b6a9a16cad6ab975862ec77ee2b40a070d"
-
 site = Flask(__name__)
 site.config.from_object(__name__)
+login_manager = LoginManager(site)
 
 site.config.update(dict(DATABASE=os.path.join(site.root_path, 'flsite.db')))
 # session.permanent_session_lifetime = datetime.timedelta(seconds=10)
@@ -59,6 +61,7 @@ def addPost():
     return  render_template('add_post.html', examples=dbase.getMenu(), title="Добавление статьи")
 
 @site.route("/posts/<int:id>")
+@login_required
 def showPost(id):
     title, post = dbase.getPost(id)
     print(dbase.getPost(id))
@@ -87,7 +90,15 @@ def login():
 def register():
     if request.method == "POST":
         if len(request.form['name']) > 4 and len(request.form['email']) > 4 and len(request.form['psw']) > 4 and request.form['psw'] == request.form['psw2']:
-            hash = generate_password_hash()
+            hash = generate_password_hash(request.form['psw'])
+            res = dbase.addUser(request.form['name'], request.form['email'], hash)
+            if res:
+                flash("Success register", "success")
+                return redirect(url_for('login'))
+            else:
+                flash("Ошибка при добавлении в БД", "error")
+        else:
+            flash("Неверно заполнены поля", "error")
     return render_template('register.html', examples=dbase.getMenu(), title='Register')
 
 @site.route("/sessions") # sessions
@@ -100,6 +111,22 @@ def sessions():
         session['visits'] = 1
     session.modified = True
     return f"<h1>Session Page</h1><p>Число посещений: {session['visits']}"
+
+@login_manager.user_loader
+def load_user(user_id):
+    print('load user')
+    return UserLogin().fromDB(user_id, dbase)
+@site.route("/login2", methods=["POST", "GET"])
+def login2():
+    if request.method == "POST":
+        user = dbase.getUserByEmail(request.form['email'])
+        if user and check_password_hash(user['psw'], request.form['psw']):
+            userlogin = UserLogin().create(user)
+            login_user(userlogin)
+            return redirect(url_for('index'))
+        flash("Bad passsword or email", "error")
+    return render_template("login.html", examples=dbase.getMenu(), title="Autorization")
+
 @site.teardown_appcontext
 def close_db(error):
     if hasattr(g, "link_db"):
