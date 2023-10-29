@@ -6,7 +6,7 @@ from FDataBase import FDataBase
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, login_user, login_required
 from UserLogin import UserLogin
-
+import werkzeug.urls
 # config
 DATABASE = '/tmp/flsite.db'
 DEBUG = True
@@ -14,11 +14,11 @@ SECRET_KEY = "fddb73b6a9a16cad6ab975862ec77ee2b40a070d"
 site = Flask(__name__)
 site.config.from_object(__name__)
 login_manager = LoginManager(site)
-
+from admin.admin import admin
 site.config.update(dict(DATABASE=os.path.join(site.root_path, 'flsite.db')))
 # session.permanent_session_lifetime = datetime.timedelta(seconds=10)
 dbase = None
-
+site.register_blueprint(admin, url_prefix='/admin')
 @site.before_request
 def before_request():
     global dbase
@@ -125,7 +125,7 @@ def login2():
             login_user(userlogin)
             return redirect(url_for('index'))
         flash("Bad passsword or email", "error")
-    return render_template("login.html", examples=dbase.getMenu(), title="Autorization")
+    return render_template("login2.html", examples=dbase.getMenu(), title="Autorization")
 
 @site.teardown_appcontext
 def close_db(error):
