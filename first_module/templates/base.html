@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link type="text/css" href="{{url_for('static', filename='css/base.css')}}" rel="stylesheet"/>
+    {% block head %}{% endblock %}
+    {% if title %}
+        <title> Flask WSGI -> {{ title }}</title>
+    {% else %}
+        <title> Flask WSGI -> no title</title>
+    {% endif %}
+</head>
+<body>
+{% block content -%}
+	{%- block mainmenu -%}
+<ul class="mainmenu">
+{% for p in menu %}
+<li><a href="{{p.url}}">{{p.name}}</a></li>
+{% endfor %}
+</ul>
+	{% endblock mainmenu -%}
+<div class="clear"></div>
+<div class="content">
+	{% if title -%}
+<h1>{{title}}</h1>
+	{% else -%}
+<h1>Про Flask</h1>
+	{% endif -%}
+{% endblock -%}
+{% block body %}
+{% endblock %}
+</body>
+</html>
