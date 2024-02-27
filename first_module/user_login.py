@@ -6,6 +6,10 @@ class UserLogin():
         cls.__user = WorkDb.get_user_id(user_id)
 
     @classmethod
+    def create(cls, user):
+        cls.__user = user
+        return cls
+    @classmethod
     def is_authenticated(cls) -> bool:
         return True
 

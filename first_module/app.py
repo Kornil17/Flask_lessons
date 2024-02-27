@@ -1,22 +1,35 @@
-from flask import Flask, render_template, url_for, request, flash, get_flashed_messages, session, redirect, abort, make_response
-from flask_login import LoginManager
-from settings import Config
-from database import WorkDb
 from datetime import datetime, timedelta
+
+from flask import Flask, render_template, url_for, request, flash, get_flashed_messages, session, redirect, abort, make_response
+from flask_login import LoginManager, login_user, login_required, logout_user
 from werkzeug.security import generate_password_hash, check_password_hash
 
+from settings import Config
+from database import WorkDb
 from user_login import UserLogin
+from forms import LoginForm
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = Config.get_settings()['app']['key']
 app.permanent_session_lifetime = timedelta(days=10)
 
 login_manager = LoginManager(app)
+login_manager.login_view = 'login'
+login_manager.login_message = 'Авторизуйтесь для доступа к закрытым страницам сайта'
+login_manager.login_message_category = 'success'
 
 @login_manager.user_loader
 def load_user(user_id):
+    print(f'load user {user_id}')
     return UserLogin().get_user(user_id)
 
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash(f'Вы вышли из аккаунта', 'success')
+    return redirect(url_for('login'))
 
 @app.route('/')
 def main():
@@ -34,12 +47,34 @@ def contact():
 
 @app.route('/login', methods=["POST", "GET"])
 def login():
-    if request.method == "GET" and 'userLogged' in session:
-        return redirect(url_for('profile', username=session['userLogged']))
-    elif request.method == "POST" and request.form['username'] == 'Dmitriy' and request.form['password'] == '123':
-        session['userLogged'] = request.form['username']
-        return redirect(url_for('profile', username=session['userLogged']))
-    return render_template('login.html', title='Авторизация', menu=WorkDb.get_menu())
+    # if request.method == "GET" and 'userLogged' in session:
+    #     return redirect(url_for('profile', username=session['userLogged']))
+    # elif request.method == "POST" and request.form['username'] == 'Dmitriy' and request.form['password'] == '123':
+    #     session['userLogged'] = request.form['username']
+    #     return redirect(url_for('profile', username=session['userLogged']))
+    # return render_template('login.html', title='Авторизация', menu=WorkDb.get_menu())
+
+    # if request.method == "POST":
+    #     user = WorkDb.get_user_name(request.form['username'])
+    #     if user and check_password_hash(user['password'], request.form['password']):
+    #         hash = generate_password_hash(request.form['password'])
+    #         userLogin = UserLogin.create(user)
+    #         load_user(userLogin)
+    #         flash('Авторизация успешна')
+    #         return redirect(url_for('main'))
+    #     flash('Неверный логин или пароль')
+
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = WorkDb.get_user_name(form.name.data)
+        if user and check_password_hash(user['password'], form.password.data):
+            hash = generate_password_hash(form.password.data)
+            userLogin = UserLogin.create(user)
+            load_user(userLogin)
+            flash('Авторизация успешна')
+            return redirect(url_for('main'))
+        flash('Неверный логин или пароль')
+    return render_template('login.html', title='Авторизация', menu=WorkDb.get_menu(), form=form)
 
 @app.route('/register', methods=['POST', 'GET'])
 def register():
@@ -59,6 +94,7 @@ def register():
     return render_template('register.html', title='Регистрация', menu=WorkDb.get_menu())
 
 @app.route('/profile/<username>')
+@login_required
 def profile(username):
     if 'userLogged' not in session or session['userLogged'] != username:
         abort(401)
@@ -76,7 +112,7 @@ def addPost():
         else:
             flash('Ошибка добавления статьи', category='error')
     return render_template('add_post.html', menu=WorkDb.get_menu(), title="Добавление статьи")
-
+@login_required
 @app.route('/post/<int:id_post>')
 def showPost(id_post):
     data = WorkDb.get_post(id_post)

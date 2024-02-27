@@ -1,5 +1,6 @@
-from sqlalchemy import create_engine, MetaData
+from sqlalchemy import create_engine, MetaData,  LargeBinary
 from sqlalchemy.orm import sessionmaker, Mapped, mapped_column, as_declarative, declared_attr
+from typing import BinaryIO
 from settings import Config
 from loguru import logger
 from datetime import datetime
@@ -40,6 +41,7 @@ class Users(AbsractModel):
     name: Mapped[str]
     email: Mapped[str]
     password: Mapped[str]
+    image: Mapped[str]
     time: Mapped[datetime] = mapped_column(default=datetime.utcnow())
 
 class Posts(AbsractModel):
@@ -101,10 +103,10 @@ class WorkDb:
             logger.error(f"Got error by get all post -> {error}")
 
     @classmethod
-    def addUser(cls, username, email, password) -> bool:
+    def addUser(cls, username, email, password, image=None) -> bool:
         try:
             with session() as conn:
-                user = Users(name=username, email=email, password=password)
+                user = Users(name=username, email=email, password=password, image=image)
                 get_user = conn.query(Users).filter_by(name=username).first()
                 logger.info(f'Get username from DB -> {get_user}')
                 if get_user:
@@ -122,15 +124,32 @@ class WorkDb:
         try:
             with session() as conn:
                 get_user = conn.query(Users).filter_by(id=user_id).first().__dict__
+                logger.info(f"Got user_id -> {user_id}")
+                if not get_user:
+                    logger.error('Пользователь не найден')
+                    return False
                 del get_user['_sa_instance_state']
                 return get_user
         except Exception as error:
-            logger.error(f"Got error by get user info -> {error}")
+            logger.error(f"Got error by get user info by id = {user_id} -> {error}")
+
+    @classmethod
+    def get_user_name(cls, name: str) -> dict:
+        try:
+            with session() as conn:
+                get_user = conn.query(Users).filter_by(name=name).first().__dict__
+                if not get_user:
+                    logger.error('Пользователь не найден')
+                    return False
+                del get_user['_sa_instance_state']
+                return get_user
+        except Exception as error:
+            logger.error(f"Got error by get user name -> {error}")
 def main():
     # AbsractModel.metadata.drop_all(engine)
     menu = [
         {"name": "Авторизация", "url": "login"},
-        {"name": "Добавить статью", "url": "addPost"},
+        {"name": "Добавить статью", "url": "add_post"},
         {"name": "Обратная связь", "url": "contact"}
     ]
     # Users.__table__.drop(engine)
@@ -139,7 +158,7 @@ def main():
     # logger.info(WorkDb.get_user_id(1))
     # for i in menu:
     #     logger.info(WorkDb.insert_menu_data(title=i['name'], url=i['url']))
-    # logger.info(WorkDb.get_post(id=1))
+    logger.info(WorkDb.get_post(id=1))
     # logger.info(WorkDb.get_all_posts())
 
 
