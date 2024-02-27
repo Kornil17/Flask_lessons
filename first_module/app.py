@@ -1,15 +1,23 @@
 from flask import Flask, render_template, url_for, request, flash, get_flashed_messages, session, redirect, abort, make_response
+from flask_login import LoginManager
 from settings import Config
 from database import WorkDb
+from datetime import datetime, timedelta
+from werkzeug.security import generate_password_hash, check_password_hash
 
+from user_login import UserLogin
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = Config.get_settings()['app']['key']
-# menu = [
-#     {"name": "Установка", "url": "install-flask"},
-#     {"name": "Добавить статью", "url": "addPost"},
-#     {"name": "Обратная связь", "url": "contact"}
-# ]
+app.permanent_session_lifetime = timedelta(days=10)
+
+login_manager = LoginManager(app)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return UserLogin().get_user(user_id)
+
+
 @app.route('/')
 def main():
     print(url_for('main'))
@@ -32,6 +40,24 @@ def login():
         session['userLogged'] = request.form['username']
         return redirect(url_for('profile', username=session['userLogged']))
     return render_template('login.html', title='Авторизация', menu=WorkDb.get_menu())
+
+@app.route('/register', methods=['POST', 'GET'])
+def register():
+    if request.method == 'POST':
+        if len(request.form['username']) >= 4 and len(request.form['email']) >= 4 \
+            and len(request.form['password']) >= 4 and (request.form['password'] == request.form['repeat_password']):
+            hash = generate_password_hash(request.form['password'])
+            res = WorkDb.addUser(request.form['username'], request.form['email'], hash)
+            if res:
+                flash('Вы успешно зарегистрированы', category='success')
+                return redirect(url_for("login"))
+            else:
+                flash('Ошибка при добавлении пользователя в БД', category='error')
+        else:
+            flash('Неверно заполнены поля', category='error')
+
+    return render_template('register.html', title='Регистрация', menu=WorkDb.get_menu())
+
 @app.route('/profile/<username>')
 def profile(username):
     if 'userLogged' not in session or session['userLogged'] != username:
@@ -80,6 +106,20 @@ def del_cookie():
     res.set_cookie('logged', '', 0)
     return res
 
+@app.route('/session_cookie')
+def session_cookie():
+    session.permanent = False
+    if 'visits' in session:
+        session['visits'] = session.get('visits') + 1
+    else:
+        session['visits'] = 1
+    return f"<h1>Main Page</h1><p>Число просмотров: {session['visits']}"
+
+@app.route('/del_session_cookie')
+def del_session_cookie():
+    if 'visits' in session:
+        del session['visits']
+    return f"Seesion cookie очищены"
 
 @app.errorhandler(404)
 def page_not_found(error):

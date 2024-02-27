@@ -1,19 +1,19 @@
 app:
-  key: 'abcdefgklmnoprst'
-
-database:
-  host: localhost
-  port: 5432
-  username: postgres
-  password: 1234567890
-  db_name: postgres
+  key: 'ba5b4d691bba739658858f49fa9adba890726cf5'
 
 #database:
-#  host: 89.108.103.170
+#  host: localhost
 #  port: 5432
-#  username: fsrar_user
-#  password: Qwerty1234
-#  db_name: conductor
+#  username: postgres
+#  password: 1234567890
+#  db_name: postgres
+
+database:
+  host: 89.108.103.170
+  port: 5432
+  username: fsrar_user
+  password: Qwerty1234
+  db_name: conductor
 
 
 

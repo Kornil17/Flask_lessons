@@ -34,12 +34,23 @@ class Menu(AbsractModel):
     def __iter__(self):
         return self
 
+class Users(AbsractModel):
+    __tablename__ = 'users'
+
+    name: Mapped[str]
+    email: Mapped[str]
+    password: Mapped[str]
+    time: Mapped[datetime] = mapped_column(default=datetime.utcnow())
+
 class Posts(AbsractModel):
     __tablename__ = 'posts'
 
     title: Mapped[str]
     text: Mapped[str]
     time: Mapped[datetime] = mapped_column(default=datetime.utcnow())
+
+
+
 class WorkDb:
     @classmethod
     def get_menu(cls) -> list:
@@ -88,15 +99,44 @@ class WorkDb:
 
         except Exception as error:
             logger.error(f"Got error by get all post -> {error}")
+
+    @classmethod
+    def addUser(cls, username, email, password) -> bool:
+        try:
+            with session() as conn:
+                user = Users(name=username, email=email, password=password)
+                get_user = conn.query(Users).filter_by(name=username).first()
+                logger.info(f'Get username from DB -> {get_user}')
+                if get_user:
+                    logger.error(f'Пользователь с именем -> {username} уже существует')
+                    return False
+                data = conn.add(user)
+                conn.commit()
+                return True
+        except Exception as error:
+            logger.error(f"Got error by add user -> {error}")
+            return False
+
+    @classmethod
+    def get_user_id(cls, user_id: int) -> dict:
+        try:
+            with session() as conn:
+                get_user = conn.query(Users).filter_by(id=user_id).first().__dict__
+                del get_user['_sa_instance_state']
+                return get_user
+        except Exception as error:
+            logger.error(f"Got error by get user info -> {error}")
 def main():
+    # AbsractModel.metadata.drop_all(engine)
     menu = [
-        {"name": "Установка", "url": "install-flask"},
+        {"name": "Авторизация", "url": "login"},
         {"name": "Добавить статью", "url": "addPost"},
         {"name": "Обратная связь", "url": "contact"}
     ]
-
+    # Users.__table__.drop(engine)
     AbsractModel.metadata.create_all(engine)
     logger.info(WorkDb.get_menu())
+    # logger.info(WorkDb.get_user_id(1))
     # for i in menu:
     #     logger.info(WorkDb.insert_menu_data(title=i['name'], url=i['url']))
     # logger.info(WorkDb.get_post(id=1))
