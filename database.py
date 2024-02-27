@@ -89,6 +89,12 @@ class WorkDb:
         except Exception as error:
             logger.error(f"Got error by get all post -> {error}")
 def main():
+    menu = [
+        {"name": "Установка", "url": "install-flask"},
+        {"name": "Добавить статью", "url": "addPost"},
+        {"name": "Обратная связь", "url": "contact"}
+    ]
+
     AbsractModel.metadata.create_all(engine)
     logger.info(WorkDb.get_menu())
     # for i in menu:

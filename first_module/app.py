@@ -1,4 +1,4 @@
-from flask import Flask, render_template, url_for, request, flash, get_flashed_messages, session, redirect, abort
+from flask import Flask, render_template, url_for, request, flash, get_flashed_messages, session, redirect, abort, make_response
 from settings import Config
 from database import WorkDb
 
@@ -26,7 +26,6 @@ def contact():
 
 @app.route('/login', methods=["POST", "GET"])
 def login():
-    print(request.method)
     if request.method == "GET" and 'userLogged' in session:
         return redirect(url_for('profile', username=session['userLogged']))
     elif request.method == "POST" and request.form['username'] == 'Dmitriy' and request.form['password'] == '123':
@@ -59,6 +58,27 @@ def showPost(id_post):
         abort(404)
     title, post = data.title, data.text
     return render_template('post.html', menu=WorkDb.get_menu(), title=title, post=post)
+
+@app.route('/test')
+def test():
+    res = make_response(render_template('index.html'))
+    res.headers['Content-Type'] = 'text/html'
+    return res, 200
+
+@app.route('/set_cookie')
+def set_cookie():
+    log = ''
+    if request.cookies.get('logged'):
+        log = request.cookies.get('logged')
+    res = make_response(f'Cookie авторизации:  {log}')
+    res.set_cookie('logged', 'yes')
+    return res
+
+@app.route('/del_cookie')
+def del_cookie():
+    res = make_response('Вы больше не авторизованы')
+    res.set_cookie('logged', '', 0)
+    return res
 
 
 @app.errorhandler(404)
