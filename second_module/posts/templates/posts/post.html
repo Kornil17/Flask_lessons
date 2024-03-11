@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{% if title %}
+{{title}}
+{% else %}
+Post
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<ul>
+    <li>Blog name -> {{post.title}}</li>
+    Blog id -> {{post.id}}
+    <br>
+    Blog body -> {{post.body}}
+    <br>
+    Tags -> <a href="{{ url_for('index') }}">{{ tag.name }}</a>
+</ul>
+<a href="{{ url_for('posts.index') }}">Return to posts page</a>
+{% endblock %}

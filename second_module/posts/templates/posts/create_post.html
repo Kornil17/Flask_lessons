@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add post</title>
+</head>
+<body>
+<form action="{{ url_for('posts.create_post') }}" method="POST">
+{{ post_form.hidden_tag() }}
+<p>{{ post_form.title.label()  }} {{ post_form.title()  }}</p>
+<p>{{ post_form.body.label()  }} {{ post_form.body()  }}</p>
+<p>{{ post_form.submit() }}</p>
+    <br>
+<p><a href="{{ url_for('index') }}">return to main page</a></p>
+</form>
+</body>
+</html>

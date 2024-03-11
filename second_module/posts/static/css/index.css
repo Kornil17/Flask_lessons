@@ -1,0 +1,25 @@
+.pagination {
+    list-style: none;
+    display: flex;
+}
+
+.pagination li {
+    margin-right: 5px;
+}
+
+.pagination li a {
+    text-decoration: none;
+    padding: 5px 10px;
+    background-color: lightgray;
+    color: black;
+}
+
+.pagination li.active a {
+    background-color: gray;
+    color: white;
+}
+
+.pagination li.disabled a {
+    pointer-events: none;
+    cursor: not-allowed;
+}
